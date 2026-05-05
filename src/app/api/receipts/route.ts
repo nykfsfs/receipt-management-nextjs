@@ -3,8 +3,29 @@ import pool from '@/lib/db';
 import { Receipt, ReceiptItem } from '@/lib/types';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 
-export async function GET() {
+/** Whitelist で ORDER BY を組む（クエリ混入防止） */
+function receiptListOrder(sort: string | null, order: string | null): string {
+  const asc = order === 'asc';
+  const dir = asc ? 'ASC' : 'DESC';
+  switch (sort) {
+    case 'id':
+      return `ORDER BY r.id ${dir}`;
+    case 'store_name':
+      return `ORDER BY r.store_name ${dir}, r.id ${dir}`;
+    case 'total_amount':
+      return `ORDER BY r.total_amount ${dir}, r.id ${dir}`;
+    case 'purchase_date':
+      return `ORDER BY r.purchase_date ${dir}, r.id ${dir}`;
+    default:
+      return `ORDER BY r.purchase_date DESC, r.id DESC`;
+  }
+}
+
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const orderSql = receiptListOrder(searchParams.get('sort'), searchParams.get('order'));
+
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT r.id, r.store_name, r.purchase_date, r.tax_rate_id,
               t.rate AS tax_rate, t.description AS tax_rate_description,
@@ -12,7 +33,7 @@ export async function GET() {
               r.created_at, r.updated_at
        FROM receipts r
        JOIN tax_rates t ON t.id = r.tax_rate_id
-       ORDER BY r.purchase_date DESC, r.id DESC`
+       ${orderSql}`
     );
     const receipts = rows.map((r) => ({
       ...r,
