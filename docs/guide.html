@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>レシート管理システム 解説資料</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "Yu Gothic", "游ゴシック", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+    font-size: 14px;
+    line-height: 1.8;
+    color: #1a1a2e;
+    background: #f8f9fa;
+  }
+
+  /* ---- レイアウト ---- */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 12px auto;
+    padding: 18mm 18mm 14mm;
+    background: white;
+    box-shadow: 0 2px 12px rgba(0,0,0,.12);
+    position: relative;
+  }
+  .page-cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 297mm;
+    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 50%, #3b82f6 100%);
+    color: white;
+    padding: 40px;
+  }
+
+  /* ---- タイポグラフィ ---- */
+  h1 { font-size: 32px; font-weight: 700; margin-bottom: 12px; }
+  h2 { font-size: 20px; font-weight: 700; color: #1e3a8a; border-left: 5px solid #3b82f6; padding-left: 12px; margin: 24px 0 14px; }
+  h3 { font-size: 15px; font-weight: 700; color: #1e40af; margin: 18px 0 8px; }
+  h4 { font-size: 13px; font-weight: 700; color: #374151; margin: 12px 0 6px; }
+  p  { margin-bottom: 10px; }
+  ul, ol { margin: 8px 0 10px 22px; }
+  li { margin-bottom: 4px; }
+
+  /* ---- コードブロック ---- */
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-x: auto;
+    margin: 10px 0 14px;
+  }
+  code {
+    background: #e0e7ff;
+    color: #3730a3;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: "Consolas", "Courier New", monospace;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  .kw  { color: #c084fc; }
+  .fn  { color: #60a5fa; }
+  .str { color: #86efac; }
+  .cm  { color: #64748b; }
+  .ty  { color: #fbbf24; }
+
+  /* ---- ボックス ---- */
+  .box {
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 10px 0 14px;
+  }
+  .box-blue   { background: #eff6ff; border-left: 4px solid #3b82f6; }
+  .box-green  { background: #f0fdf4; border-left: 4px solid #22c55e; }
+  .box-yellow { background: #fefce8; border-left: 4px solid #eab308; }
+  .box-purple { background: #faf5ff; border-left: 4px solid #a855f7; }
+  .box-title  { font-weight: 700; margin-bottom: 4px; font-size: 13px; }
+
+  /* ---- バッジ ---- */
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+    margin: 2px;
+  }
+  .badge-blue   { background:#dbeafe; color:#1e40af; }
+  .badge-green  { background:#dcfce7; color:#166534; }
+  .badge-yellow { background:#fef9c3; color:#713f12; }
+  .badge-red    { background:#fee2e2; color:#991b1b; }
+  .badge-purple { background:#f3e8ff; color:#6b21a8; }
+
+  /* ---- グリッド ---- */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 10px 0; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 10px 0; }
+  .card {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  /* ---- ページ番号 ---- */
+  .page-num {
+    position: absolute;
+    bottom: 10mm;
+    right: 18mm;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+  .page-footer {
+    position: absolute;
+    bottom: 10mm;
+    left: 18mm;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+
+  /* ---- テーブル ---- */
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 14px; font-size: 13px; }
+  th { background: #1e3a8a; color: white; padding: 8px 12px; text-align: left; font-weight: 600; }
+  td { padding: 7px 12px; border-bottom: 1px solid #e2e8f0; }
+  tr:nth-child(even) td { background: #f8fafc; }
+
+  /* ---- カバーページ ---- */
+  .cover-title { font-size: 38px; font-weight: 800; letter-spacing: 2px; margin-bottom: 16px; }
+  .cover-sub { font-size: 18px; font-weight: 400; opacity: .9; margin-bottom: 32px; }
+  .cover-badge {
+    display: inline-block;
+    background: rgba(255,255,255,.2);
+    border: 1px solid rgba(255,255,255,.4);
+    padding: 6px 18px;
+    border-radius: 99px;
+    font-size: 13px;
+    margin: 6px;
+  }
+  .cover-date { margin-top: 48px; opacity: .7; font-size: 13px; }
+
+  /* ---- 印刷 ---- */
+  @media print {
+    body { background: white; }
+    .page { margin: 0; box-shadow: none; page-break-after: always; }
+    .page:last-child { page-break-after: auto; }
+    .no-print { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== カバーページ ========== -->
+<div class="page page-cover">
+  <div>
+    <div style="font-size:72px; margin-bottom:16px;">🧾</div>
+    <div class="cover-title">レシート管理システム</div>
+    <div class="cover-sub">JavaScript / React / Next.js 初心者向け解説資料</div>
+    <div>
+      <span class="cover-badge">JavaScript</span>
+      <span class="cover-badge">TypeScript</span>
+      <span class="cover-badge">React</span>
+      <span class="cover-badge">Next.js 16</span>
+      <span class="cover-badge">MySQL</span>
+      <span class="cover-badge">Tailwind CSS</span>
+    </div>
+    <div class="cover-date">2026年5月</div>
+  </div>
+</div>
+
+<!-- ========== 目次 ========== -->
+<div class="page">
+  <h2>目次</h2>
+  <table>
+    <tr><th style="width:60px">章</th><th>内容</th></tr>
+    <tr><td>1</td><td>このアプリの概要と機能</td></tr>
+    <tr><td>2</td><td>使用技術の全体像</td></tr>
+    <tr><td>3</td><td>JavaScript と TypeScript</td></tr>
+    <tr><td>4</td><td>React — コンポーネントで画面を作る</td></tr>
+    <tr><td>5</td><td>useState — 画面の「状態」を管理する</td></tr>
+    <tr><td>6</td><td>useEffect — タイミングに応じた処理</td></tr>
+    <tr><td>7</td><td>Next.js — ファイルがそのままURLになる</td></tr>
+    <tr><td>8</td><td>Server Components と Client Components</td></tr>
+    <tr><td>9</td><td>API Routes — バックエンドを書く</td></tr>
+    <tr><td>10</td><td>データベース設計</td></tr>
+    <tr><td>11</td><td>データの流れ（全体フロー）</td></tr>
+    <tr><td>12</td><td>各画面の解説</td></tr>
+  </table>
+
+  <h3>この資料の読み方</h3>
+  <div class="box box-blue">
+    <div class="box-title">💡 ポイント</div>
+    プログラミング未経験〜半年程度の方を対象にしています。難しい部分は読み飛ばして構いません。図を中心に「どんな仕組みで動いているか」のイメージをつかむことを目標にしてください。
+  </div>
+
+  <h3>アプリの完成画面イメージ</h3>
+  <svg viewBox="0 0 560 280" style="width:100%;max-width:560px;display:block;margin:10px auto;">
+    <!-- ブラウザフレーム -->
+    <rect x="1" y="1" width="558" height="278" rx="8" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+    <rect x="1" y="1" width="558" height="32" rx="8" fill="#e2e8f0"/>
+    <rect x="1" y="25" width="558" height="8" fill="#e2e8f0"/>
+    <circle cx="20" cy="17" r="5" fill="#f87171"/><circle cx="36" cy="17" r="5" fill="#fbbf24"/><circle cx="52" cy="17" r="5" fill="#4ade80"/>
+    <!-- ナビバー -->
+    <rect x="1" y="33" width="558" height="36" fill="#1d4ed8"/>
+    <text x="18" y="57" font-size="13" fill="white" font-weight="bold" font-family="sans-serif">🧾 レシート管理システム</text>
+    <text x="260" y="57" font-size="11" fill="#93c5fd" font-family="sans-serif">レシート一覧</text>
+    <text x="360" y="57" font-size="11" fill="#93c5fd" font-family="sans-serif">商品マスタ</text>
+    <!-- テーブルヘッダ -->
+    <rect x="16" y="80" width="526" height="28" fill="#f1f5f9" rx="4"/>
+    <text x="26" y="99" font-size="11" fill="#475569" font-family="sans-serif">ID</text>
+    <text x="66" y="99" font-size="11" fill="#475569" font-family="sans-serif">店舗名</text>
+    <text x="186" y="99" font-size="11" fill="#475569" font-family="sans-serif">購入日</text>
+    <text x="296" y="99" font-size="11" fill="#475569" font-family="sans-serif">税率</text>
+    <text x="356" y="99" font-size="11" fill="#475569" font-family="sans-serif">小計</text>
+    <text x="426" y="99" font-size="11" fill="#475569" font-family="sans-serif">合計</text>
+    <!-- データ行 -->
+    <rect x="16" y="108" width="526" height="26" fill="white"/>
+    <text x="26" y="126" font-size="11" fill="#94a3b8" font-family="sans-serif">1</text>
+    <text x="66" y="126" font-size="11" fill="#1e293b" font-family="sans-serif">スーパーABC</text>
+    <text x="186" y="126" font-size="11" fill="#475569" font-family="sans-serif">2026-05-01</text>
+    <rect x="286" y="113" width="32" height="16" rx="8" fill="#dbeafe"/>
+    <text x="292" y="125" font-size="10" fill="#1e40af" font-family="sans-serif">10%</text>
+    <text x="356" y="126" font-size="11" fill="#475569" font-family="sans-serif">1,200</text>
+    <text x="426" y="126" font-size="11" fill="#1e293b" font-weight="600" font-family="sans-serif">1,320 円</text>
+    <text x="510" y="126" font-size="11" fill="#3b82f6" font-family="sans-serif">編集</text>
+    <!-- データ行2 -->
+    <rect x="16" y="134" width="526" height="26" fill="#f8fafc"/>
+    <text x="26" y="152" font-size="11" fill="#94a3b8" font-family="sans-serif">2</text>
+    <text x="66" y="152" font-size="11" fill="#1e293b" font-family="sans-serif">コンビニXYZ</text>
+    <text x="186" y="152" font-size="11" fill="#475569" font-family="sans-serif">2026-04-28</text>
+    <rect x="286" y="139" width="32" height="16" rx="8" fill="#dbeafe"/>
+    <text x="292" y="151" font-size="10" fill="#1e40af" font-family="sans-serif">10%</text>
+    <text x="356" y="152" font-size="11" fill="#475569" font-family="sans-serif">850</text>
+    <text x="426" y="152" font-size="11" fill="#1e293b" font-weight="600" font-family="sans-serif">935 円</text>
+    <text x="510" y="152" font-size="11" fill="#3b82f6" font-family="sans-serif">編集</text>
+    <!-- 新規登録ボタン -->
+    <rect x="420" y="58" width="100" height="26" rx="5" fill="white"/>
+    <text x="438" y="76" font-size="11" fill="#1d4ed8" font-weight="bold" font-family="sans-serif">＋ 新規登録</text>
+  </svg>
+  <p style="text-align:center;font-size:12px;color:#94a3b8">▲ レシート一覧画面のイメージ</p>
+  <div class="page-num">1</div>
+</div>
+
+<!-- ========== P2: このアプリの概要 ========== -->
+<div class="page">
+  <h2>1. このアプリの概要と機能</h2>
+
+  <h3>何ができるアプリ？</h3>
+  <p>お店で受け取った<strong>レシートをデジタルで管理</strong>するWebアプリです。スマートフォンやパソコンのブラウザから操作でき、データはサーバーのデータベースに保存されます。</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>🧾 レシート管理</h4>
+      <ul>
+        <li>一覧表示・新規登録・編集・削除</li>
+        <li>購入日から消費税率を自動計算</li>
+        <li>明細行ごとに税率設定が可能</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>📦 商品マスタ管理</h4>
+      <ul>
+        <li>商品コード・商品名・カテゴリを登録</li>
+        <li>メーカー情報も管理</li>
+        <li>カテゴリ：食料・お菓子・日用品など</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>🔍 商品選択モーダル</h4>
+      <ul>
+        <li>明細入力時にポップアップで商品検索</li>
+        <li>カテゴリ絞り込み・テキスト検索</li>
+        <li>選択すると商品名が自動入力</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>💰 消費税の自動適用</h4>
+      <ul>
+        <li>購入日に応じた税率を自動取得</li>
+        <li>3%/5%/8%/10%に対応</li>
+        <li>明細ごとに個別税率を設定可能</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>画面の一覧</h3>
+  <svg viewBox="0 0 520 200" style="width:100%;max-width:520px;display:block;margin:10px auto;">
+    <defs>
+      <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6 Z" fill="#94a3b8"/>
+      </marker>
+    </defs>
+    <!-- ルート -->
+    <rect x="190" y="10" width="140" height="36" rx="6" fill="#1e3a8a"/>
+    <text x="260" y="33" text-anchor="middle" font-size="12" fill="white" font-family="sans-serif">/ レシート一覧</text>
+    <!-- 分岐 -->
+    <line x1="260" y1="46" x2="260" y2="66" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+    <line x1="120" y1="66" x2="400" y2="66" stroke="#94a3b8" stroke-width="1.5"/>
+    <line x1="120" y1="66" x2="120" y2="86" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+    <line x1="400" y1="66" x2="400" y2="86" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+    <!-- レシート系 -->
+    <rect x="50" y="86" width="140" height="34" rx="6" fill="#3b82f6"/>
+    <text x="120" y="104" text-anchor="middle" font-size="11" fill="white" font-family="sans-serif">/receipts/new</text>
+    <text x="120" y="116" text-anchor="middle" font-size="10" fill="#bfdbfe" font-family="sans-serif">新規登録</text>
+    <rect x="200" y="86" width="120" height="34" rx="6" fill="#3b82f6"/>
+    <text x="260" y="104" text-anchor="middle" font-size="11" fill="white" font-family="sans-serif">/receipts/:id/edit</text>
+    <text x="260" y="116" text-anchor="middle" font-size="10" fill="#bfdbfe" font-family="sans-serif">編集</text>
+    <!-- 商品系 -->
+    <rect x="330" y="86" width="140" height="34" rx="6" fill="#7c3aed"/>
+    <text x="400" y="104" text-anchor="middle" font-size="11" fill="white" font-family="sans-serif">/products</text>
+    <text x="400" y="116" text-anchor="middle" font-size="10" fill="#ddd6fe" font-family="sans-serif">商品マスタ一覧</text>
+    <!-- 商品詳細 -->
+    <line x1="400" y1="120" x2="400" y2="140" stroke="#94a3b8" stroke-width="1.5"/>
+    <line x1="350" y1="140" x2="450" y2="140" stroke="#94a3b8" stroke-width="1.5"/>
+    <line x1="350" y1="140" x2="350" y2="152" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+    <line x1="450" y1="140" x2="450" y2="152" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+    <rect x="305" y="152" width="92" height="34" rx="6" fill="#a855f7"/>
+    <text x="351" y="170" text-anchor="middle" font-size="10" fill="white" font-family="sans-serif">/products/new</text>
+    <text x="351" y="181" text-anchor="middle" font-size="9" fill="#e9d5ff" font-family="sans-serif">新規登録</text>
+    <rect x="403" y="152" width="100" height="34" rx="6" fill="#a855f7"/>
+    <text x="453" y="170" text-anchor="middle" font-size="10" fill="white" font-family="sans-serif">/products/:id/edit</text>
+    <text x="453" y="181" text-anchor="middle" font-size="9" fill="#e9d5ff" font-family="sans-serif">編集</text>
+  </svg>
+  <p style="text-align:center;font-size:12px;color:#94a3b8">▲ 画面（URL）の構成図</p>
+  <div class="page-num">2</div>
+</div>
+
+<!-- ========== P3: 技術スタック ========== -->
+<div class="page">
+  <h2>2. 使用技術の全体像</h2>
+
+  <p>このアプリは複数の技術を組み合わせて作られています。それぞれが異なる役割を担っています。</p>
+
+  <svg viewBox="0 0 520 320" style="width:100%;max-width:520px;display:block;margin:14px auto;">
+    <!-- ユーザー -->
+    <ellipse cx="260" cy="28" rx="60" ry="22" fill="#f0fdf4" stroke="#22c55e" stroke-width="2"/>
+    <text x="260" y="33" text-anchor="middle" font-size="13" fill="#166534" font-weight="bold" font-family="sans-serif">ユーザー</text>
+    <!-- 矢印 -->
+    <line x1="260" y1="50" x2="260" y2="68" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="280" y="63" font-size="10" fill="#94a3b8" font-family="sans-serif">ブラウザ操作</text>
+    <!-- ブラウザ層 -->
+    <rect x="60" y="70" width="400" height="56" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="260" y="92" text-anchor="middle" font-size="13" fill="#1e40af" font-weight="bold" font-family="sans-serif">ブラウザ（フロントエンド）</text>
+    <text x="260" y="114" text-anchor="middle" font-size="11" fill="#3b82f6" font-family="sans-serif">React コンポーネント / TypeScript / Tailwind CSS</text>
+    <!-- 矢印 -->
+    <line x1="260" y1="126" x2="260" y2="144" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="280" y="139" font-size="10" fill="#94a3b8" font-family="sans-serif">HTTP通信（fetch）</text>
+    <!-- Next.js層 -->
+    <rect x="60" y="146" width="400" height="56" rx="8" fill="#faf5ff" stroke="#a855f7" stroke-width="2"/>
+    <text x="260" y="168" text-anchor="middle" font-size="13" fill="#6b21a8" font-weight="bold" font-family="sans-serif">Next.js サーバー（バックエンド）</text>
+    <text x="260" y="190" text-anchor="middle" font-size="11" fill="#a855f7" font-family="sans-serif">App Router / Route Handlers (API) / TypeScript</text>
+    <!-- 矢印 -->
+    <line x1="260" y1="202" x2="260" y2="220" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="280" y="215" font-size="10" fill="#94a3b8" font-family="sans-serif">SQL クエリ</text>
+    <!-- DB層 -->
+    <rect x="60" y="222" width="400" height="56" rx="8" fill="#fef9c3" stroke="#eab308" stroke-width="2"/>
+    <text x="260" y="244" text-anchor="middle" font-size="13" fill="#713f12" font-weight="bold" font-family="sans-serif">データベース（MySQL）</text>
+    <text x="260" y="266" text-anchor="middle" font-size="11" fill="#a16207" font-family="sans-serif">レシート / 商品マスタ / 消費税マスタ</text>
+    <!-- 注釈 -->
+    <rect x="60" y="292" width="120" height="22" rx="4" fill="#dbeafe"/>
+    <text x="120" y="307" text-anchor="middle" font-size="10" fill="#1e40af" font-family="sans-serif">画面を描画する</text>
+    <rect x="200" y="292" width="120" height="22" rx="4" fill="#f3e8ff"/>
+    <text x="260" y="307" text-anchor="middle" font-size="10" fill="#6b21a8" font-family="sans-serif">処理・APIを提供</text>
+    <rect x="340" y="292" width="120" height="22" rx="4" fill="#fef9c3"/>
+    <text x="400" y="307" text-anchor="middle" font-size="10" fill="#713f12" font-family="sans-serif">データを永続保存</text>
+  </svg>
+  <p style="text-align:center;font-size:12px;color:#94a3b8">▲ アーキテクチャ全体図（3層構造）</p>
+
+  <h3>技術スタック早見表</h3>
+  <table>
+    <tr><th>技術</th><th>役割</th><th>たとえると</th></tr>
+    <tr><td><span class="badge badge-yellow">JavaScript</span></td><td>Webブラウザで動くプログラミング言語</td><td>建物の「設計図の言語」</td></tr>
+    <tr><td><span class="badge badge-blue">TypeScript</span></td><td>JavaScriptに型チェックを追加</td><td>設計図に「寸法の単位」を明記</td></tr>
+    <tr><td><span class="badge badge-blue">React</span></td><td>UI部品（コンポーネント）を組み合わせてページを作る</td><td>LEGOブロックで家を建てる</td></tr>
+    <tr><td><span class="badge badge-purple">Next.js</span></td><td>Reactをベースにしたフルスタックフレームワーク</td><td>建設現場の管理システム</td></tr>
+    <tr><td><span class="badge badge-yellow">MySQL</span></td><td>データを保存するデータベース</td><td>大きな電子台帳</td></tr>
+    <tr><td><span class="badge badge-green">Tailwind CSS</span></td><td>CSSをクラス名で書けるライブラリ</td><td>塗り絵の色鉛筆セット</td></tr>
+  </table>
+  <div class="page-num">3</div>
+</div>
+
+<!-- ========== P4: JavaScript / TypeScript ========== -->
+<div class="page">
+  <h2>3. JavaScript と TypeScript</h2>
+
+  <h3>JavaScript とは？</h3>
+  <p>JavaScriptはWebブラウザの中で動くプログラミング言語です。ボタンをクリックしたときの動作や、サーバーとのデータのやり取りなどを記述します。</p>
+
+  <h3>TypeScript とは？</h3>
+  <div class="box box-blue">
+    <div class="box-title">TypeScript = JavaScript ＋ 型</div>
+    「型」とは、変数に入れられるデータの種類（文字列・数値・真偽値など）を宣言することです。型を明示することで<strong>バグを事前に防ぎ</strong>、コードを読みやすくします。このプロジェクトでは全ファイルをTypeScriptで書いています。
+  </div>
+
+  <div class="grid2" style="gap:10px">
+    <div>
+      <h4>JavaScript（型なし）</h4>
+<pre><span class="cm">// 何の型でも入れられる</span>
+<span class="kw">let</span> name = <span class="str">"山田太郎"</span>;
+name = 123; <span class="cm">// エラーにならない！</span>
+
+<span class="kw">function</span> <span class="fn">add</span>(a, b) {
+  <span class="kw">return</span> a + b;
+}
+<span class="fn">add</span>(<span class="str">"1"</span>, 2); <span class="cm">// "12" になってしまう</span></pre>
+    </div>
+    <div>
+      <h4>TypeScript（型あり）</h4>
+<pre><span class="cm">// 型を宣言する</span>
+<span class="kw">let</span> name: <span class="ty">string</span> = <span class="str">"山田太郎"</span>;
+name = 123; <span class="cm">// ← ここでエラーになる</span>
+
+<span class="kw">function</span> <span class="fn">add</span>(a: <span class="ty">number</span>, b: <span class="ty">number</span>): <span class="ty">number</span> {
+  <span class="kw">return</span> a + b;
+}
+<span class="fn">add</span>(<span class="str">"1"</span>, 2); <span class="cm">// ← ここでエラーになる</span></pre>
+    </div>
+  </div>
+
+  <h3>このプロジェクトの型定義（src/lib/types.ts）</h3>
+  <p>アプリ全体で使うデータの「形」を1ファイルに集約しています。</p>
+<pre><span class="cm">// 商品マスタの型</span>
+<span class="kw">export type</span> <span class="ty">Product</span> = {
+  id?:           <span class="ty">number</span>;     <span class="cm">// ? は「省略可能」を意味する</span>
+  product_code:  <span class="ty">string</span>;     <span class="cm">// 商品コード（必須）</span>
+  product_name:  <span class="ty">string</span>;     <span class="cm">// 商品名（必須）</span>
+  category_id?:  <span class="ty">number</span> | <span class="ty">null</span>; <span class="cm">// カテゴリID（省略可）</span>
+  manufacturer?: <span class="ty">string</span>;     <span class="cm">// メーカー（省略可）</span>
+};
+
+<span class="cm">// レシート明細の型</span>
+<span class="kw">export type</span> <span class="ty">ReceiptItem</span> = {
+  product_code?:   <span class="ty">string</span>;   <span class="cm">// 商品コード（省略可）</span>
+  item_name:       <span class="ty">string</span>;   <span class="cm">// 商品名（必須）</span>
+  quantity:        <span class="ty">number</span>;   <span class="cm">// 数量</span>
+  unit_price:      <span class="ty">number</span>;   <span class="cm">// 単価</span>
+  amount:          <span class="ty">number</span>;   <span class="cm">// 金額（数量×単価）</span>
+  item_tax_rate:   <span class="ty">number</span>;   <span class="cm">// 税率（例：10）</span>
+  item_tax_amount: <span class="ty">number</span>;   <span class="cm">// 税額</span>
+};</pre>
+
+  <div class="box box-green">
+    <div class="box-title">✅ まとめ</div>
+    TypeScript の「型」は<strong>設計書</strong>のようなものです。「この変数には数値しか入らない」と宣言しておくことで、間違った値を入れようとしたとき、コードを書いている段階でエラーとして気づけます。
+  </div>
+  <div class="page-num">4</div>
+</div>
+
+<!-- ========== P5: React ========== -->
+<div class="page">
+  <h2>4. React — コンポーネントで画面を作る</h2>
+
+  <h3>コンポーネントとは？</h3>
+  <div class="box box-blue">
+    <div class="box-title">💡 コンポーネント = 画面の「部品」</div>
+    Reactでは、画面をバラバラの部品（コンポーネント）に分割して作ります。ボタン・フォーム・テーブルそれぞれが独立した部品です。LEGOブロックのように組み合わせて1つの画面を作ります。
+  </div>
+
+  <h3>このアプリのコンポーネント構成</h3>
+  <svg viewBox="0 0 520 230" style="width:100%;max-width:520px;display:block;margin:10px auto;">
+    <!-- NavBar -->
+    <rect x="160" y="10" width="200" height="36" rx="6" fill="#1e3a8a"/>
+    <text x="260" y="34" text-anchor="middle" font-size="12" fill="white" font-family="sans-serif">NavBar（ナビゲーション）</text>
+    <!-- 線 -->
+    <line x1="260" y1="46" x2="260" y2="64" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+    <line x1="100" y1="64" x2="420" y2="64" stroke="#94a3b8" stroke-width="1.5"/>
+    <line x1="100" y1="64" x2="100" y2="82" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+    <line x1="260" y1="64" x2="260" y2="82" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+    <line x1="420" y1="64" x2="420" y2="82" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+    <!-- 3コンポーネント -->
+    <rect x="20" y="82" width="160" height="40" rx="6" fill="#3b82f6"/>
+    <text x="100" y="99" text-anchor="middle" font-size="11" fill="white" font-family="sans-serif">ReceiptForm</text>
+    <text x="100" y="114" text-anchor="middle" font-size="10" fill="#bfdbfe" font-family="sans-serif">レシート入力フォーム</text>
+    <rect x="190" y="82" width="140" height="40" rx="6" fill="#7c3aed"/>
+    <text x="260" y="99" text-anchor="middle" font-size="11" fill="white" font-family="sans-serif">ProductForm</text>
+    <text x="260" y="114" text-anchor="middle" font-size="10" fill="#ddd6fe" font-family="sans-serif">商品登録フォーム</text>
+    <rect x="340" y="82" width="160" height="40" rx="6" fill="#0891b2"/>
+    <text x="420" y="99" text-anchor="middle" font-size="11" fill="white" font-family="sans-serif">各ページ（page.tsx）</text>
+    <text x="420" y="114" text-anchor="middle" font-size="10" fill="#a5f3fc" font-family="sans-serif">一覧表示など</text>
+    <!-- ReceiptFormの子 -->
+    <line x1="100" y1="122" x2="100" y2="140" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+    <rect x="20" y="140" width="160" height="40" rx="6" fill="#0ea5e9"/>
+    <text x="100" y="157" text-anchor="middle" font-size="11" fill="white" font-family="sans-serif">ProductSelectModal</text>
+    <text x="100" y="172" text-anchor="middle" font-size="10" fill="#bae6fd" font-family="sans-serif">商品選択ポップアップ</text>
+    <!-- props矢印説明 -->
+    <text x="60" y="130" font-size="10" fill="#94a3b8" font-family="sans-serif">使う</text>
+    <!-- 説明ボックス -->
+    <rect x="20" y="195" width="480" height="30" rx="4" fill="#f0fdf4"/>
+    <text x="260" y="214" text-anchor="middle" font-size="11" fill="#166534" font-family="sans-serif">コンポーネントは「親から子へ」props（引数）を通じてデータを受け渡します</text>
+  </svg>
+  <p style="text-align:center;font-size:12px;color:#94a3b8">▲ コンポーネント構成図</p>
+
+  <h3>コンポーネントの書き方（例）</h3>
+<pre><span class="cm">// src/components/NavBar.tsx</span>
+<span class="kw">import</span> Link <span class="kw">from</span> <span class="str">'next/link'</span>;
+
+<span class="cm">// コンポーネントは「関数」として定義する</span>
+<span class="kw">export default function</span> <span class="fn">NavBar</span>() {
+  <span class="kw">return</span> (
+    <span class="cm">{/* JSX: JavaScript の中に HTML のような記法を書ける */}</span>
+    &lt;header className=<span class="str">"bg-blue-600 text-white"</span>&gt;
+      &lt;h1&gt;レシート管理システム&lt;/h1&gt;
+      &lt;nav&gt;
+        &lt;Link href=<span class="str">"/"</span>&gt;レシート一覧&lt;/Link&gt;
+        &lt;Link href=<span class="str">"/products"</span>&gt;商品マスタ&lt;/Link&gt;
+      &lt;/nav&gt;
+    &lt;/header&gt;
+  );
+}</pre>
+
+  <div class="box box-yellow">
+    <div class="box-title">⚠️ JSX について</div>
+    Reactコンポーネントの中では <code>&lt;div&gt;</code> のようなHTMLに見える記法が使えます。これを <strong>JSX</strong> といい、実際はJavaScriptに変換されます。HTMLとの違いは <code>class</code> の代わりに <code>className</code> を使う点などです。
+  </div>
+  <div class="page-num">5</div>
+</div>
+
+<!-- ========== P6: useState ========== -->
+<div class="page">
+  <h2>5. useState — 画面の「状態」を管理する</h2>
+
+  <h3>「状態（State）」とは？</h3>
+  <p>Reactでは、画面に表示される変化するデータを「状態（State）」と呼びます。テキストボックスの入力値、チェックボックスのオン/オフ、APIから取得したデータなどが該当します。</p>
+
+  <div class="box box-blue">
+    <div class="box-title">重要：状態が変わると画面が自動で再描画される</div>
+    <code>useState</code> で管理している値が変わると、Reactは自動的に画面（コンポーネント）を再描画します。開発者は「状態を更新する」だけで、画面の更新は自動です。
+  </div>
+
+  <h3>useState の仕組み</h3>
+  <svg viewBox="0 0 520 160" style="width:100%;max-width:520px;display:block;margin:10px auto;">
+    <!-- 状態ボックス -->
+    <rect x="180" y="20" width="160" height="50" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="260" y="42" text-anchor="middle" font-size="12" fill="#1e40af" font-weight="bold" font-family="sans-serif">状態（State）</text>
+    <text x="260" y="62" text-anchor="middle" font-size="11" fill="#3b82f6" font-family="sans-serif">storeName = "ABC"</text>
+    <!-- 画面ボックス -->
+    <rect x="20" y="100" width="140" height="44" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="2"/>
+    <text x="90" y="120" text-anchor="middle" font-size="12" fill="#166534" font-weight="bold" font-family="sans-serif">画面（UI）</text>
+    <text x="90" y="138" text-anchor="middle" font-size="10" fill="#16a34a" font-family="sans-serif">テキストボックス表示</text>
+    <!-- ボタン -->
+    <rect x="360" y="100" width="140" height="44" rx="8" fill="#fef9c3" stroke="#eab308" stroke-width="2"/>
+    <text x="430" y="120" text-anchor="middle" font-size="12" fill="#713f12" font-weight="bold" font-family="sans-serif">ユーザー操作</text>
+    <text x="430" y="138" text-anchor="middle" font-size="10" fill="#a16207" font-family="sans-serif">テキスト入力</text>
+    <!-- 矢印（状態→画面） -->
+    <path d="M180,55 C130,55 90,80 90,100" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+    <text x="108" y="78" font-size="10" fill="#3b82f6" font-family="sans-serif">自動再描画</text>
+    <!-- 矢印（操作→状態更新） -->
+    <path d="M360,112 C300,90 280,75 340,50" stroke="#eab308" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+    <text x="310" y="82" font-size="10" fill="#a16207" font-family="sans-serif">setStoreName()</text>
+  </svg>
+
+  <h3>このアプリでの使用例</h3>
+<pre><span class="cm">// src/components/ReceiptForm.tsx（抜粋）</span>
+
+<span class="cm">// useState で状態を宣言する</span>
+<span class="cm">// [現在の値, 値を更新する関数] の形で受け取る</span>
+<span class="kw">const</span> [storeName,    setStoreName]    = useState(<span class="str">''</span>);     <span class="cm">// 店舗名</span>
+<span class="kw">const</span> [purchaseDate, setPurchaseDate] = useState(<span class="str">''</span>);     <span class="cm">// 購入日</span>
+<span class="kw">const</span> [items,        setItems]        = useState([]);     <span class="cm">// 明細リスト</span>
+<span class="kw">const</span> [submitting,   setSubmitting]   = useState(<span class="kw">false</span>);  <span class="cm">// 送信中フラグ</span>
+
+<span class="cm">// ← 入力値が変わったら setStoreName() で状態を更新</span>
+<span class="cm">// → React が自動で画面を再描画してくれる</span>
+&lt;input
+  value={storeName}
+  onChange={(e) =&gt; <span class="fn">setStoreName</span>(e.target.value)}
+/&gt;</pre>
+
+  <div class="box box-green">
+    <div class="box-title">✅ ポイント</div>
+    <ul>
+      <li><strong>変数を直接書き換えない</strong>（<code>storeName = "ABC"</code> はNG）</li>
+      <li><strong>必ずセッター関数を使う</strong>（<code>setStoreName("ABC")</code> がOK）</li>
+      <li>セッター関数を呼ぶと、Reactが自動的に画面を最新の状態に更新してくれる</li>
+    </ul>
+  </div>
+  <div class="page-num">6</div>
+</div>
+
+<!-- ========== P7: useEffect ========== -->
+<div class="page">
+  <h2>6. useEffect — タイミングに応じた処理</h2>
+
+  <h3>useEffect とは？</h3>
+  <p>コンポーネントが画面に表示されたとき、または特定の値が変化したときに、<strong>自動的に実行したい処理</strong>を書くための仕組みです。「副作用（Side Effect）」と呼ばれます。</p>
+
+  <div class="grid2">
+    <div class="box box-blue" style="margin:0">
+      <div class="box-title">よく使う場面</div>
+      <ul>
+        <li>画面表示時にAPIでデータを取得</li>
+        <li>入力値が変わったらAPIを叩く</li>
+        <li>タイマーのセット・解除</li>
+      </ul>
+    </div>
+    <div class="box box-yellow" style="margin:0">
+      <div class="box-title">⚠️ 注意点</div>
+      <ul>
+        <li>第2引数の配列が依存関係</li>
+        <li><code>[]</code> のとき → 初回のみ実行</li>
+        <li><code>[value]</code> → value変化時に実行</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>購入日変更 → 税率取得の例</h3>
+  <svg viewBox="0 0 520 120" style="width:100%;max-width:520px;display:block;margin:10px auto;">
+    <rect x="10" y="20" width="110" height="80" rx="6" fill="#fef9c3" stroke="#eab308" stroke-width="1.5"/>
+    <text x="65" y="50" text-anchor="middle" font-size="11" fill="#713f12" font-weight="bold" font-family="sans-serif">購入日</text>
+    <text x="65" y="68" text-anchor="middle" font-size="11" fill="#713f12" font-family="sans-serif">入力変更</text>
+    <text x="65" y="86" text-anchor="middle" font-size="11" fill="#a16207" font-family="sans-serif">2026-05-01</text>
+    <line x1="120" y1="60" x2="170" y2="60" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="145" y="52" text-anchor="middle" font-size="10" fill="#94a3b8" font-family="sans-serif">変化</text>
+    <rect x="170" y="20" width="110" height="80" rx="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="225" y="50" text-anchor="middle" font-size="11" fill="#1e40af" font-weight="bold" font-family="sans-serif">useEffect</text>
+    <text x="225" y="68" text-anchor="middle" font-size="11" fill="#1e40af" font-family="sans-serif">が発火</text>
+    <text x="225" y="86" text-anchor="middle" font-size="10" fill="#3b82f6" font-family="sans-serif">fetchTaxRate()</text>
+    <line x1="280" y1="60" x2="330" y2="60" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="305" y="52" text-anchor="middle" font-size="10" fill="#94a3b8" font-family="sans-serif">API呼び出し</text>
+    <rect x="330" y="20" width="110" height="80" rx="6" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5"/>
+    <text x="385" y="50" text-anchor="middle" font-size="11" fill="#166534" font-weight="bold" font-family="sans-serif">税率取得</text>
+    <text x="385" y="68" text-anchor="middle" font-size="11" fill="#16a34a" font-family="sans-serif">10%</text>
+    <text x="385" y="86" text-anchor="middle" font-size="10" fill="#22c55e" font-family="sans-serif">画面に反映</text>
+  </svg>
+
+<pre><span class="cm">// 購入日が変わったら自動的に税率を取得する</span>
+<span class="kw">useEffect</span>(() =&gt; {
+  <span class="kw">if</span> (purchaseDate) <span class="fn">fetchTaxRate</span>(purchaseDate);
+}, [purchaseDate]); <span class="cm">// ← purchaseDate が変化したときだけ実行</span>
+
+<span class="cm">// デバウンス（タイピング中の過剰な通信を防ぐ）</span>
+<span class="kw">useEffect</span>(() =&gt; {
+  <span class="kw">const</span> timer = <span class="fn">setTimeout</span>(<span class="fn">fetchProducts</span>, 300); <span class="cm">// 0.3秒待つ</span>
+  <span class="kw">return</span> () =&gt; <span class="fn">clearTimeout</span>(timer); <span class="cm">// クリーンアップ</span>
+}, [search, categoryId]);</pre>
+
+  <div class="box box-purple">
+    <div class="box-title">🔄 デバウンスとは？</div>
+    商品検索で1文字入力するたびにAPIを叩くと、サーバーへの負荷が高くなります。「0.3秒間入力が止まったらAPIを叩く」という仕組みがデバウンスです。<code>setTimeout</code> のクリーンアップで実現しています。
+  </div>
+  <div class="page-num">7</div>
+</div>
+
+<!-- ========== P8: Next.js ルーティング ========== -->
+<div class="page">
+  <h2>7. Next.js — ファイルがそのままURLになる</h2>
+
+  <h3>App Router のファイルベースルーティング</h3>
+  <p>Next.js では <code>src/app/</code> フォルダのディレクトリ構造がそのままURLになります。ファイルを置くだけでページが作れる仕組みです。</p>
+
+  <svg viewBox="0 0 520 200" style="width:100%;max-width:520px;display:block;margin:10px auto;">
+    <!-- 左側：ファイル -->
+    <rect x="10" y="10" width="200" height="180" rx="6" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+    <text x="110" y="32" text-anchor="middle" font-size="12" fill="#475569" font-weight="bold" font-family="monospace">📁 src/app/</text>
+    <text x="30" y="55" font-size="11" fill="#0f172a" font-family="monospace">├── page.tsx</text>
+    <text x="30" y="75" font-size="11" fill="#0f172a" font-family="monospace">├── receipts/</text>
+    <text x="40" y="93" font-size="11" fill="#475569" font-family="monospace">│ ├── new/</text>
+    <text x="50" y="110" font-size="11" fill="#475569" font-family="monospace">│ │ └── page.tsx</text>
+    <text x="40" y="128" font-size="11" fill="#475569" font-family="monospace">│ └── [id]/</text>
+    <text x="50" y="146" font-size="11" fill="#475569" font-family="monospace">│   └── edit/page.tsx</text>
+    <text x="30" y="166" font-size="11" fill="#0f172a" font-family="monospace">└── products/</text>
+    <text x="40" y="183" font-size="11" fill="#475569" font-family="monospace">  └── ...</text>
+    <!-- 矢印 -->
+    <text x="222" y="50" font-size="16" fill="#94a3b8" font-family="sans-serif">→</text>
+    <text x="222" y="93" font-size="16" fill="#94a3b8" font-family="sans-serif">→</text>
+    <text x="222" y="110" font-size="16" fill="#94a3b8" font-family="sans-serif">→</text>
+    <text x="222" y="130" font-size="16" fill="#94a3b8" font-family="sans-serif">→</text>
+    <text x="222" y="166" font-size="16" fill="#94a3b8" font-family="sans-serif">→</text>
+    <!-- 右側：URL -->
+    <rect x="248" y="10" width="262" height="180" rx="6" fill="#1e3a8a"/>
+    <text x="379" y="32" text-anchor="middle" font-size="12" fill="#93c5fd" font-weight="bold" font-family="sans-serif">URL</text>
+    <rect x="258" y="40" width="242" height="22" rx="4" fill="rgba(255,255,255,.1)"/>
+    <text x="379" y="56" text-anchor="middle" font-size="11" fill="white" font-family="monospace">/</text>
+    <rect x="258" y="80" width="242" height="22" rx="4" fill="rgba(255,255,255,.1)"/>
+    <text x="379" y="96" text-anchor="middle" font-size="11" fill="white" font-family="monospace">/receipts/new</text>
+    <rect x="258" y="118" width="242" height="22" rx="4" fill="rgba(255,255,255,.1)"/>
+    <text x="379" y="134" text-anchor="middle" font-size="11" fill="white" font-family="monospace">/receipts/3/edit</text>
+    <text x="379" y="151" text-anchor="middle" font-size="10" fill="#93c5fd" font-family="sans-serif">※ [id] は動的なID（3など）</text>
+    <rect x="258" y="156" width="242" height="22" rx="4" fill="rgba(255,255,255,.1)"/>
+    <text x="379" y="172" text-anchor="middle" font-size="11" fill="white" font-family="monospace">/products</text>
+  </svg>
+  <p style="text-align:center;font-size:12px;color:#94a3b8">▲ ファイル構成とURLの対応</p>
+
+  <h3>[id] — 動的ルーティング</h3>
+  <p>フォルダ名を <code>[id]</code> のように角括弧で囲むと、URLの一部を変数として受け取れます。</p>
+<pre><span class="cm">// src/app/receipts/[id]/edit/page.tsx</span>
+<span class="kw">type</span> <span class="ty">Props</span> = { params: <span class="ty">Promise</span>&lt;{ id: <span class="ty">string</span> }&gt; };
+
+<span class="kw">export default async function</span> <span class="fn">EditReceiptPage</span>({ params }: <span class="ty">Props</span>) {
+  <span class="kw">const</span> { id } = <span class="kw">await</span> params; <span class="cm">// URLの [id] 部分を取得</span>
+  <span class="cm">// /receipts/3/edit にアクセスすると id = "3" になる</span>
+  <span class="kw">const</span> receipt = <span class="kw">await</span> <span class="fn">getReceipt</span>(id);
+  <span class="cm">// ...</span>
+}</pre>
+
+  <div class="box box-yellow">
+    <div class="box-title">⚠️ Next.js 15以降の変更点</div>
+    Next.js 15 から <code>params</code> は <strong>Promise</strong> として渡ってきます。<code>await params</code> で中身を取り出す必要があります（古い書き方では <code>params.id</code> と直接アクセスできましたが、現在はエラーになります）。
+  </div>
+  <div class="page-num">8</div>
+</div>
+
+<!-- ========== P9: Server/Client Components ========== -->
+<div class="page">
+  <h2>8. Server Components と Client Components</h2>
+
+  <h3>2種類のコンポーネント</h3>
+  <p>Next.js の App Router では、コンポーネントをサーバーで動かすか、ブラウザで動かすかを選べます。</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4 style="color:#7c3aed">🖥️ Server Components（デフォルト）</h4>
+      <ul>
+        <li>サーバー側で実行される</li>
+        <li>DBへの直接アクセスが可能</li>
+        <li><code>useState</code> / イベントが使えない</li>
+        <li>ファイルの先頭に何も書かない</li>
+      </ul>
+      <p style="font-size:12px;color:#64748b;margin-top:8px">例：一覧ページ（DBからデータ取得して表示）</p>
+    </div>
+    <div class="card">
+      <h4 style="color:#0891b2">🌐 Client Components</h4>
+      <ul>
+        <li>ブラウザ側で実行される</li>
+        <li><code>useState</code> / <code>useEffect</code> が使える</li>
+        <li>ボタンクリックなどのイベント処理</li>
+        <li>ファイルの先頭に <code>'use client'</code> と書く</li>
+      </ul>
+      <p style="font-size:12px;color:#64748b;margin-top:8px">例：フォーム（ユーザー入力を受け付ける）</p>
+    </div>
+  </div>
+
+  <svg viewBox="0 0 520 150" style="width:100%;max-width:520px;display:block;margin:14px auto;">
+    <!-- サーバー側 -->
+    <rect x="10" y="10" width="230" height="130" rx="8" fill="#faf5ff" stroke="#a855f7" stroke-width="2"/>
+    <text x="125" y="32" text-anchor="middle" font-size="12" fill="#7c3aed" font-weight="bold" font-family="sans-serif">🖥️ Next.js サーバー</text>
+    <rect x="24" y="42" width="202" height="32" rx="6" fill="#f3e8ff"/>
+    <text x="125" y="54" text-anchor="middle" font-size="11" fill="#6b21a8" font-family="monospace">products/page.tsx</text>
+    <text x="125" y="68" text-anchor="middle" font-size="10" fill="#a855f7" font-family="sans-serif">Server Component</text>
+    <text x="24" y="100" font-size="10" fill="#7c3aed" font-family="sans-serif">✅ DBに直接アクセス</text>
+    <text x="24" y="116" font-size="10" fill="#7c3aed" font-family="sans-serif">✅ 高速（JS不要）</text>
+    <text x="24" y="132" font-size="10" fill="#94a3b8" font-family="sans-serif">❌ インタラクション不可</text>
+    <!-- ブラウザ側 -->
+    <rect x="280" y="10" width="230" height="130" rx="8" fill="#ecfeff" stroke="#0891b2" stroke-width="2"/>
+    <text x="395" y="32" text-anchor="middle" font-size="12" fill="#0891b2" font-weight="bold" font-family="sans-serif">🌐 ブラウザ</text>
+    <rect x="294" y="42" width="202" height="32" rx="6" fill="#cffafe"/>
+    <text x="395" y="54" text-anchor="middle" font-size="11" fill="#0e7490" font-family="monospace">ReceiptForm.tsx</text>
+    <text x="395" y="68" text-anchor="middle" font-size="10" fill="#0891b2" font-family="sans-serif">Client Component（'use client'）</text>
+    <text x="294" y="100" font-size="10" fill="#0891b2" font-family="sans-serif">✅ useState / useEffect</text>
+    <text x="294" y="116" font-size="10" fill="#0891b2" font-family="sans-serif">✅ ボタンクリックなど</text>
+    <text x="294" y="132" font-size="10" fill="#94a3b8" font-family="sans-serif">❌ DBに直接アクセス不可</text>
+  </svg>
+
+  <h3>このアプリでの使い分け</h3>
+  <table>
+    <tr><th>ファイル</th><th>種別</th><th>理由</th></tr>
+    <tr><td><code>app/products/page.tsx</code></td><td><span class="badge badge-purple">Server</span></td><td>DBから商品一覧を取得して表示するだけ</td></tr>
+    <tr><td><code>components/ProductForm.tsx</code></td><td><span class="badge badge-blue">Client</span></td><td>入力フォーム・バリデーション・状態管理が必要</td></tr>
+    <tr><td><code>components/ProductSelectModal.tsx</code></td><td><span class="badge badge-blue">Client</span></td><td>検索・フィルター・クリックイベントが必要</td></tr>
+    <tr><td><code>components/NavBar.tsx</code></td><td><span class="badge badge-purple">Server</span></td><td>Linkタグを並べるだけ・状態不要</td></tr>
+  </table>
+  <div class="page-num">9</div>
+</div>
+
+<!-- ========== P10: API Routes ========== -->
+<div class="page">
+  <h2>9. API Routes — バックエンドを書く</h2>
+
+  <h3>Route Handlers とは？</h3>
+  <p><code>src/app/api/</code> フォルダに <code>route.ts</code> を置くと、そのファイルがAPIエンドポイントになります。ブラウザからの HTTP リクエストを受け取り、DBとやり取りしてデータを返します。</p>
+
+  <svg viewBox="0 0 520 130" style="width:100%;max-width:520px;display:block;margin:10px auto;">
+    <rect x="10" y="20" width="110" height="90" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="2"/>
+    <text x="65" y="52" text-anchor="middle" font-size="12" fill="#166534" font-weight="bold" font-family="sans-serif">ブラウザ</text>
+    <text x="65" y="72" text-anchor="middle" font-size="11" fill="#16a34a" font-family="sans-serif">fetch(</text>
+    <text x="65" y="86" text-anchor="middle" font-size="10" fill="#16a34a" font-family="monospace">'/api/products'</text>
+    <text x="65" y="100" text-anchor="middle" font-size="11" fill="#16a34a" font-family="sans-serif">)</text>
+    <line x1="120" y1="65" x2="160" y2="65" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="140" y="57" text-anchor="middle" font-size="10" fill="#94a3b8" font-family="sans-serif">GET</text>
+    <rect x="160" y="20" width="200" height="90" rx="8" fill="#faf5ff" stroke="#a855f7" stroke-width="2"/>
+    <text x="260" y="44" text-anchor="middle" font-size="11" fill="#6b21a8" font-weight="bold" font-family="sans-serif">Route Handler</text>
+    <text x="260" y="60" text-anchor="middle" font-size="10" fill="#7c3aed" font-family="monospace">api/products/route.ts</text>
+    <text x="260" y="78" text-anchor="middle" font-size="10" fill="#a855f7" font-family="sans-serif">SQLクエリ実行</text>
+    <text x="260" y="94" text-anchor="middle" font-size="10" fill="#a855f7" font-family="sans-serif">JSON で返す</text>
+    <line x1="360" y1="65" x2="400" y2="65" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="380" y="57" text-anchor="middle" font-size="10" fill="#94a3b8" font-family="sans-serif">SQL</text>
+    <rect x="400" y="20" width="110" height="90" rx="8" fill="#fef9c3" stroke="#eab308" stroke-width="2"/>
+    <text x="455" y="52" text-anchor="middle" font-size="12" fill="#713f12" font-weight="bold" font-family="sans-serif">MySQL</text>
+    <text x="455" y="72" text-anchor="middle" font-size="11" fill="#a16207" font-family="sans-serif">products</text>
+    <text x="455" y="86" text-anchor="middle" font-size="11" fill="#a16207" font-family="sans-serif">テーブル</text>
+    <!-- 戻り矢印 -->
+    <line x1="400" y1="80" x2="360" y2="80" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arr)"/>
+    <line x1="160" y1="80" x2="120" y2="80" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="260" y="116" text-anchor="middle" font-size="10" fill="#3b82f6" font-family="sans-serif">JSON レスポンスが返ってくる</text>
+  </svg>
+
+  <h3>Route Handler の書き方</h3>
+<pre><span class="cm">// src/app/api/products/route.ts</span>
+<span class="kw">import</span> { NextResponse } <span class="kw">from</span> <span class="str">'next/server'</span>;
+<span class="kw">import</span> pool <span class="kw">from</span> <span class="str">'@/lib/db'</span>; <span class="cm">// DBコネクション</span>
+
+<span class="cm">// GET /api/products → 商品一覧を返す</span>
+<span class="kw">export async function</span> <span class="fn">GET</span>() {
+  <span class="kw">const</span> [rows] = <span class="kw">await</span> pool.<span class="fn">query</span>(<span class="str">`SELECT * FROM products`</span>);
+  <span class="kw">return</span> NextResponse.<span class="fn">json</span>(rows); <span class="cm">// JSON形式で返す</span>
+}
+
+<span class="cm">// POST /api/products → 商品を新規登録する</span>
+<span class="kw">export async function</span> <span class="fn">POST</span>(request: <span class="ty">Request</span>) {
+  <span class="kw">const</span> body = <span class="kw">await</span> request.<span class="fn">json</span>(); <span class="cm">// リクエストのデータを取得</span>
+  <span class="kw">await</span> pool.<span class="fn">query</span>(
+    <span class="str">`INSERT INTO products (product_code, product_name) VALUES (?, ?)`</span>,
+    [body.product_code, body.product_name]
+  );
+  <span class="kw">return</span> NextResponse.<span class="fn">json</span>({ ok: <span class="kw">true</span> }, { status: 201 });
+}</pre>
+
+  <div class="box box-green">
+    <div class="box-title">✅ RESTful API の HTTP メソッド</div>
+    <div class="grid2" style="gap:8px;margin:0">
+      <div><span class="badge badge-green">GET</span> データを取得する</div>
+      <div><span class="badge badge-blue">POST</span> データを新規作成する</div>
+      <div><span class="badge badge-yellow">PUT</span> データを更新する</div>
+      <div><span class="badge badge-red">DELETE</span> データを削除する</div>
+    </div>
+  </div>
+  <div class="page-num">10</div>
+</div>
+
+<!-- ========== P11: DB設計 ========== -->
+<div class="page">
+  <h2>10. データベース設計</h2>
+
+  <h3>テーブル構成（ER図）</h3>
+  <svg viewBox="0 0 520 260" style="width:100%;max-width:520px;display:block;margin:10px auto;">
+    <!-- tax_rates -->
+    <rect x="10" y="10" width="140" height="90" rx="6" fill="#fef9c3" stroke="#eab308" stroke-width="2"/>
+    <rect x="10" y="10" width="140" height="26" rx="6" fill="#eab308"/>
+    <text x="80" y="28" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="sans-serif">tax_rates</text>
+    <text x="20" y="50" font-size="11" fill="#713f12" font-family="monospace">id (PK)</text>
+    <text x="20" y="64" font-size="11" fill="#713f12" font-family="monospace">applicable_from</text>
+    <text x="20" y="78" font-size="11" fill="#713f12" font-family="monospace">rate</text>
+    <text x="20" y="92" font-size="11" fill="#713f12" font-family="monospace">description</text>
+    <!-- product_categories -->
+    <rect x="370" y="10" width="140" height="76" rx="6" fill="#f0fdf4" stroke="#22c55e" stroke-width="2"/>
+    <rect x="370" y="10" width="140" height="26" rx="6" fill="#22c55e"/>
+    <text x="440" y="28" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="sans-serif">product_categories</text>
+    <text x="380" y="50" font-size="11" fill="#166534" font-family="monospace">id (PK)</text>
+    <text x="380" y="64" font-size="11" fill="#166534" font-family="monospace">name</text>
+    <text x="380" y="78" font-size="11" fill="#166534" font-family="monospace">sort_order</text>
+    <!-- products -->
+    <rect x="350" y="120" width="160" height="100" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+    <rect x="350" y="120" width="160" height="26" rx="6" fill="#16a34a"/>
+    <text x="430" y="138" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="sans-serif">products</text>
+    <text x="360" y="160" font-size="11" fill="#166534" font-family="monospace">id (PK)</text>
+    <text x="360" y="174" font-size="11" fill="#166534" font-family="monospace">product_code (UQ)</text>
+    <text x="360" y="188" font-size="11" fill="#166534" font-family="monospace">product_name</text>
+    <text x="360" y="202" font-size="11" fill="#166534" font-family="monospace">category_id (FK)</text>
+    <text x="360" y="216" font-size="11" fill="#166534" font-family="monospace">manufacturer</text>
+    <!-- receipts -->
+    <rect x="10" y="120" width="150" height="100" rx="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <rect x="10" y="120" width="150" height="26" rx="6" fill="#3b82f6"/>
+    <text x="85" y="138" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="sans-serif">receipts</text>
+    <text x="20" y="160" font-size="11" fill="#1e40af" font-family="monospace">id (PK)</text>
+    <text x="20" y="174" font-size="11" fill="#1e40af" font-family="monospace">store_name</text>
+    <text x="20" y="188" font-size="11" fill="#1e40af" font-family="monospace">purchase_date</text>
+    <text x="20" y="202" font-size="11" fill="#1e40af" font-family="monospace">tax_rate_id (FK)</text>
+    <text x="20" y="216" font-size="11" fill="#1e40af" font-family="monospace">subtotal / total</text>
+    <!-- receipt_items -->
+    <rect x="155" y="190" width="180" height="60" rx="6" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+    <rect x="155" y="190" width="180" height="26" rx="6" fill="#2563eb"/>
+    <text x="245" y="208" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="sans-serif">receipt_items</text>
+    <text x="165" y="228" font-size="10" fill="#1e40af" font-family="monospace">receipt_id (FK)  product_code</text>
+    <text x="165" y="242" font-size="10" fill="#1e40af" font-family="monospace">item_name  quantity  amount</text>
+    <!-- FK線 -->
+    <line x1="85" y1="120" x2="85" y2="106" stroke="#3b82f6" stroke-width="1.5"/>
+    <line x1="85" y1="106" x2="80" y2="100" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arr)"/>
+    <line x1="160" y1="220" x2="155" y2="220" stroke="#2563eb" stroke-width="1.5"/>
+    <line x1="430" y1="120" x2="440" y2="86" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arr)"/>
+    <!-- 疎結合の注記 -->
+    <text x="245" y="258" text-anchor="middle" font-size="10" fill="#94a3b8" font-family="sans-serif">※ receipt_items.product_code は外部キーなし（疎結合）</text>
+  </svg>
+
+  <div class="box box-yellow">
+    <div class="box-title">💡 疎結合の設計意図</div>
+    <code>receipt_items</code> の <code>product_code</code> は、商品マスタとの<strong>外部キー制約を設けていません</strong>。商品を削除した後でも、過去のレシート記録は影響を受けないためです。商品マスタはあくまで「入力の補助ツール」として位置づけています。
+  </div>
+
+  <h3>消費税マスタの使い方</h3>
+  <p>日本の消費税率の歴史を <code>tax_rates</code> テーブルで管理します。<strong>購入日以前で最も新しい税率レコード</strong>を取得する仕組みです。</p>
+<pre><span class="cm">-- 2023-01-01 の購入なら 10% が返る</span>
+SELECT * FROM tax_rates
+WHERE applicable_from &lt;= <span class="str">'2023-01-01'</span>
+ORDER BY applicable_from DESC
+LIMIT 1;</pre>
+  <div class="page-num">11</div>
+</div>
+
+<!-- ========== P12: データの流れ ========== -->
+<div class="page">
+  <h2>11. データの流れ（全体フロー）</h2>
+
+  <h3>商品をモーダルから選択してレシートを登録するまで</h3>
+
+  <svg viewBox="0 0 520 420" style="width:100%;max-width:480px;display:block;margin:10px auto;">
+    <defs>
+      <marker id="arr2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+        <path d="M0,0 L7,3.5 L0,7 Z" fill="#64748b"/>
+      </marker>
+    </defs>
+    <!-- ステップ1 -->
+    <rect x="10" y="10" width="500" height="44" rx="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="50" y="30" font-size="12" fill="#1e40af" font-weight="bold" font-family="sans-serif">① ユーザー</text>
+    <text x="50" y="46" font-size="11" fill="#3b82f6" font-family="sans-serif">レシート入力画面を開き、明細行の「選択」ボタンをクリック</text>
+    <!-- 矢印 -->
+    <line x1="260" y1="54" x2="260" y2="70" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <!-- ステップ2 -->
+    <rect x="10" y="70" width="500" height="44" rx="6" fill="#faf5ff" stroke="#a855f7" stroke-width="1.5"/>
+    <text x="50" y="90" font-size="12" fill="#6b21a8" font-weight="bold" font-family="sans-serif">② React State 更新</text>
+    <text x="50" y="106" font-size="11" fill="#a855f7" font-family="sans-serif">setProductSelectIndex(i) が呼ばれ、モーダルが表示される</text>
+    <!-- 矢印 -->
+    <line x1="260" y1="114" x2="260" y2="130" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <!-- ステップ3 -->
+    <rect x="10" y="130" width="500" height="44" rx="6" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5"/>
+    <text x="50" y="150" font-size="12" fill="#166534" font-weight="bold" font-family="sans-serif">③ API リクエスト（モーダル内検索）</text>
+    <text x="50" y="166" font-size="11" fill="#16a34a" font-family="sans-serif">fetch('/api/products?search=...')  → Route Handlerが受け取る</text>
+    <!-- 矢印 -->
+    <line x1="260" y1="174" x2="260" y2="190" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <!-- ステップ4 -->
+    <rect x="10" y="190" width="500" height="44" rx="6" fill="#fef9c3" stroke="#eab308" stroke-width="1.5"/>
+    <text x="50" y="210" font-size="12" fill="#713f12" font-weight="bold" font-family="sans-serif">④ MySQL クエリ実行</text>
+    <text x="50" y="226" font-size="11" fill="#a16207" font-family="sans-serif">SELECT ... FROM products WHERE product_name LIKE '%..%'</text>
+    <!-- 矢印 -->
+    <line x1="260" y1="234" x2="260" y2="250" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <!-- ステップ5 -->
+    <rect x="10" y="250" width="500" height="44" rx="6" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5"/>
+    <text x="50" y="270" font-size="12" fill="#166534" font-weight="bold" font-family="sans-serif">⑤ 商品を選択</text>
+    <text x="50" y="286" font-size="11" fill="#16a34a" font-family="sans-serif">ユーザーが商品をクリック → applyProduct() で item_name を自動入力</text>
+    <!-- 矢印 -->
+    <line x1="260" y1="294" x2="260" y2="310" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <!-- ステップ6 -->
+    <rect x="10" y="310" width="500" height="44" rx="6" fill="#faf5ff" stroke="#a855f7" stroke-width="1.5"/>
+    <text x="50" y="330" font-size="12" fill="#6b21a8" font-weight="bold" font-family="sans-serif">⑥ フォーム送信</text>
+    <text x="50" y="346" font-size="11" fill="#a855f7" font-family="sans-serif">「登録する」→ POST /api/receipts → トランザクション内でDB保存</text>
+    <!-- 矢印 -->
+    <line x1="260" y1="354" x2="260" y2="370" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <!-- ステップ7 -->
+    <rect x="10" y="370" width="500" height="44" rx="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="50" y="390" font-size="12" fill="#1e40af" font-weight="bold" font-family="sans-serif">⑦ 完了</text>
+    <text x="50" y="406" font-size="11" fill="#3b82f6" font-family="sans-serif">router.push('/') でレシート一覧ページへリダイレクト</text>
+  </svg>
+
+  <div class="box box-blue" style="margin-top:8px">
+    <div class="box-title">💡 トランザクションとは？</div>
+    レシートヘッダと明細の両方をDBに保存するとき、途中でエラーが起きると「ヘッダだけ保存された中途半端な状態」になってしまいます。トランザクションを使うことで、<strong>全部成功か、全部失敗か</strong>（アトミック）を保証できます。
+  </div>
+  <div class="page-num">12</div>
+</div>
+
+<!-- ========== P13: 各画面の解説 ========== -->
+<div class="page">
+  <h2>12. 各画面の解説</h2>
+
+  <h3>① 商品マスタ登録画面（/products/new）</h3>
+  <svg viewBox="0 0 520 170" style="width:100%;max-width:520px;display:block;margin:8px auto;">
+    <rect x="1" y="1" width="518" height="168" rx="6" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>
+    <rect x="1" y="1" width="518" height="30" rx="6" fill="#1d4ed8"/>
+    <text x="16" y="21" font-size="11" fill="white" font-weight="bold" font-family="sans-serif">🧾 レシート管理システム</text>
+    <text x="16" y="50" font-size="12" fill="#374151" font-weight="bold" font-family="sans-serif">商品マスタ 新規登録</text>
+    <text x="16" y="72" font-size="10" fill="#6b7280" font-family="sans-serif">商品コード *</text>
+    <rect x="16" y="76" width="150" height="20" rx="3" fill="white" stroke="#d1d5db" stroke-width="1"/>
+    <text x="24" y="91" font-size="10" fill="#9ca3af" font-family="sans-serif">4901234567890</text>
+    <text x="186" y="72" font-size="10" fill="#6b7280" font-family="sans-serif">商品名 *</text>
+    <rect x="186" y="76" width="150" height="20" rx="3" fill="white" stroke="#d1d5db" stroke-width="1"/>
+    <text x="194" y="91" font-size="10" fill="#9ca3af" font-family="sans-serif">緑茶 500ml</text>
+    <text x="16" y="110" font-size="10" fill="#6b7280" font-family="sans-serif">カテゴリ</text>
+    <rect x="16" y="114" width="150" height="20" rx="3" fill="white" stroke="#d1d5db" stroke-width="1"/>
+    <text x="24" y="129" font-size="10" fill="#374151" font-family="sans-serif">嗜好品 ▼</text>
+    <text x="186" y="110" font-size="10" fill="#6b7280" font-family="sans-serif">メーカー</text>
+    <rect x="186" y="114" width="150" height="20" rx="3" fill="white" stroke="#d1d5db" stroke-width="1"/>
+    <text x="194" y="129" font-size="10" fill="#9ca3af" font-family="sans-serif">サントリー</text>
+    <rect x="16" y="148" width="66" height="18" rx="4" fill="#2563eb"/>
+    <text x="49" y="161" text-anchor="middle" font-size="10" fill="white" font-family="sans-serif">登録する</text>
+    <rect x="88" y="148" width="60" height="18" rx="4" fill="#e5e7eb"/>
+    <text x="118" y="161" text-anchor="middle" font-size="10" fill="#374151" font-family="sans-serif">キャンセル</text>
+  </svg>
+
+  <h3>② レシート明細行（商品コード入力 + 選択ボタン）</h3>
+  <svg viewBox="0 0 520 110" style="width:100%;max-width:520px;display:block;margin:8px auto;">
+    <rect x="1" y="1" width="518" height="108" rx="6" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>
+    <rect x="10" y="8" width="518" height="20" rx="3" fill="#f9fafb"/>
+    <text x="16" y="22" font-size="10" fill="#6b7280" font-weight="bold" font-family="sans-serif">商品コード / 商品名</text>
+    <text x="280" y="22" font-size="10" fill="#6b7280" font-weight="bold" font-family="sans-serif">数量</text>
+    <text x="340" y="22" font-size="10" fill="#6b7280" font-weight="bold" font-family="sans-serif">単価</text>
+    <text x="400" y="22" font-size="10" fill="#6b7280" font-weight="bold" font-family="sans-serif">金額</text>
+    <text x="460" y="22" font-size="10" fill="#6b7280" font-weight="bold" font-family="sans-serif">税率</text>
+    <!-- 行1 -->
+    <rect x="16" y="32" width="100" height="18" rx="3" fill="white" stroke="#d1d5db" stroke-width="1"/>
+    <text x="24" y="45" font-size="9" fill="#374151" font-family="monospace">4901234567890</text>
+    <rect x="120" y="32" width="36" height="18" rx="3" fill="#f1f5f9" stroke="#d1d5db" stroke-width="1"/>
+    <text x="138" y="45" text-anchor="middle" font-size="9" fill="#374151" font-family="sans-serif">選択</text>
+    <rect x="16" y="54" width="140" height="18" rx="3" fill="white" stroke="#d1d5db" stroke-width="1"/>
+    <text x="24" y="67" font-size="10" fill="#374151" font-family="sans-serif">緑茶 500ml</text>
+    <rect x="270" y="32" width="40" height="40" rx="3" fill="white" stroke="#d1d5db" stroke-width="1"/>
+    <text x="290" y="56" text-anchor="middle" font-size="10" fill="#374151" font-family="sans-serif">1</text>
+    <rect x="325" y="32" width="55" height="40" rx="3" fill="white" stroke="#d1d5db" stroke-width="1"/>
+    <text x="352" y="56" text-anchor="middle" font-size="10" fill="#374151" font-family="sans-serif">198</text>
+    <text x="400" y="56" font-size="10" fill="#374151" font-weight="bold" font-family="sans-serif">198</text>
+    <text x="460" y="56" font-size="10" fill="#374151" font-family="sans-serif">10%</text>
+    <!-- 説明矢印 -->
+    <path d="M120,41 C160,41 190,75 210,80" stroke="#3b82f6" stroke-width="1.5" fill="none" stroke-dasharray="3,2"/>
+    <text x="196" y="96" font-size="9" fill="#3b82f6" font-family="sans-serif">↑ モーダルから選択するか、コードを直接入力してEnter</text>
+  </svg>
+
+  <h3>③ 商品選択モーダル（ポップアップ）</h3>
+  <svg viewBox="0 0 520 140" style="width:100%;max-width:520px;display:block;margin:8px auto;">
+    <rect x="1" y="1" width="518" height="138" rx="8" fill="white" stroke="#e2e8f0" stroke-width="2" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.15))"/>
+    <rect x="1" y="1" width="518" height="36" rx="8" fill="#f8fafc"/>
+    <text x="16" y="24" font-size="13" fill="#374151" font-weight="bold" font-family="sans-serif">商品選択</text>
+    <text x="500" y="24" text-anchor="middle" font-size="18" fill="#9ca3af" font-family="sans-serif">×</text>
+    <!-- フィルター -->
+    <rect x="10" y="42" width="320" height="22" rx="4" fill="white" stroke="#d1d5db" stroke-width="1"/>
+    <text x="18" y="57" font-size="10" fill="#9ca3af" font-family="sans-serif">商品コード・商品名・メーカーで検索</text>
+    <rect x="338" y="42" width="90" height="22" rx="4" fill="white" stroke="#d1d5db" stroke-width="1"/>
+    <text x="346" y="57" font-size="10" fill="#374151" font-family="sans-serif">全カテゴリ ▼</text>
+    <!-- テーブルヘッダ -->
+    <rect x="10" y="70" width="500" height="20" rx="3" fill="#f1f5f9"/>
+    <text x="16" y="84" font-size="10" fill="#6b7280" font-weight="bold" font-family="sans-serif">商品コード</text>
+    <text x="150" y="84" font-size="10" fill="#6b7280" font-weight="bold" font-family="sans-serif">商品名</text>
+    <text x="320" y="84" font-size="10" fill="#6b7280" font-weight="bold" font-family="sans-serif">カテゴリ</text>
+    <text x="420" y="84" font-size="10" fill="#6b7280" font-weight="bold" font-family="sans-serif">メーカー</text>
+    <!-- 行 -->
+    <rect x="10" y="90" width="500" height="22" rx="0" fill="white"/>
+    <text x="16" y="105" font-size="10" fill="#374151" font-family="monospace">4901234567890</text>
+    <text x="150" y="105" font-size="10" fill="#374151" font-weight="bold" font-family="sans-serif">緑茶 500ml</text>
+    <rect x="316" y="93" width="42" height="14" rx="7" fill="#f1f5f9"/>
+    <text x="337" y="104" text-anchor="middle" font-size="9" fill="#6b7280" font-family="sans-serif">嗜好品</text>
+    <text x="420" y="105" font-size="10" fill="#6b7280" font-family="sans-serif">サントリー</text>
+    <rect x="10" y="112" width="500" height="22" rx="0" fill="#eff6ff"/>
+    <text x="16" y="127" font-size="10" fill="#374151" font-family="monospace">4902430......</text>
+    <text x="150" y="127" font-size="10" fill="#374151" font-weight="bold" font-family="sans-serif">コーヒー牛乳</text>
+    <rect x="316" y="115" width="42" height="14" rx="7" fill="#f1f5f9"/>
+    <text x="337" y="126" text-anchor="middle" font-size="9" fill="#6b7280" font-family="sans-serif">嗜好品</text>
+    <text x="420" y="127" font-size="10" fill="#6b7280" font-family="sans-serif">雪印</text>
+  </svg>
+
+  <div class="box box-green" style="margin-top:6px">
+    <div class="box-title">✅ このアプリで学べること</div>
+    <div class="grid2" style="margin:0;gap:6px">
+      <div>✅ TypeScript で型安全なコードを書く</div>
+      <div>✅ React のコンポーネント設計</div>
+      <div>✅ useState / useEffect の活用</div>
+      <div>✅ Next.js App Router のルーティング</div>
+      <div>✅ API Routes でバックエンドを実装</div>
+      <div>✅ MySQL との接続・トランザクション</div>
+    </div>
+  </div>
+  <div class="page-num">13</div>
+</div>
+
+</body>
+</html>
