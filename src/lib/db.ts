@@ -8,6 +8,10 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME ?? 'sample_schema',
   waitForConnections: true,
   connectionLimit: 10,
+  // DATE型をDateオブジェクトではなく文字列("YYYY-MM-DD")で返す。
+  // Dateオブジェクトに変換するとtoISOString()がUTC基準になり、
+  // JST(UTC+9)環境では1日ずれるバグが発生するため。
+  dateStrings: true,
 });
 
 export default pool;
