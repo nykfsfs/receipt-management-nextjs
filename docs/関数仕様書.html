@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <title>関数仕様書 — nextjsform</title>
+  <style>
+    @page { size: A4; margin: 18mm 15mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", "Yu Gothic UI", "Yu Gothic", "Meiryo", sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.45;
+      color: #1a1a1a;
+      max-width: 100%;
+    }
+    h1 {
+      font-size: 18pt;
+      border-bottom: 2px solid #2563eb;
+      padding-bottom: 6px;
+      margin: 0 0 16px;
+    }
+    h2 {
+      font-size: 13pt;
+      color: #1e40af;
+      margin: 22px 0 10px;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 11pt;
+      margin: 14px 0 6px;
+      page-break-after: avoid;
+    }
+    p { margin: 6px 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0 14px;
+      font-size: 9.5pt;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid #94a3b8;
+      padding: 5px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #eff6ff; font-weight: 600; }
+    code, .mono {
+      font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+      font-size: 9pt;
+      background: #f1f5f9;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    pre {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 8.5pt;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 10px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      page-break-inside: avoid;
+    }
+    .meta { color: #64748b; font-size: 9pt; margin-bottom: 20px; }
+    .endpoint { font-weight: 600; color: #0f172a; }
+    .method { display: inline-block; min-width: 52px; font-weight: 700; }
+    .get { color: #16a34a; }
+    .post { color: #2563eb; }
+    .put { color: #ca8a04; }
+    .delete { color: #dc2626; }
+    .section-note { font-size: 9pt; color: #475569; margin-top: 4px; }
+    .page-break { page-break-before: always; }
+  </style>
+</head>
+<body>
+
+<h1>関数仕様書</h1>
+<p class="meta">プロジェクト: nextjsform（Next.js 16 / App Router）<br />
+対象: Route Handlers（<code>src/app/api/**/route.ts</code>）、型定義、DB 接続</p>
+
+<h2>1. 型定義（<code>src/lib/types.ts</code>）</h2>
+<table>
+  <tr><th>型名</th><th>フィールド（概要）</th></tr>
+  <tr>
+    <td><code>TaxRate</code></td>
+    <td><code>id</code>, <code>applicable_from</code>, <code>rate</code>, <code>description</code></td>
+  </tr>
+  <tr>
+    <td><code>ProductCategory</code></td>
+    <td><code>id</code>, <code>name</code>, <code>sort_order</code></td>
+  </tr>
+  <tr>
+    <td><code>Product</code></td>
+    <td><code>id?</code>, <code>product_code</code>, <code>product_name</code>, <code>category_id?</code>, <code>category_name?</code>, <code>manufacturer?</code>, <code>memo?</code>, <code>created_at?</code>, <code>updated_at?</code></td>
+  </tr>
+  <tr>
+    <td><code>ReceiptItem</code></td>
+    <td><code>id?</code>, <code>receipt_id?</code>, <code>product_code?</code>, <code>item_name</code>, <code>quantity</code>, <code>unit_price</code>, <code>amount</code>, <code>item_tax_rate</code>, <code>item_tax_amount</code></td>
+  </tr>
+  <tr>
+    <td><code>Receipt</code></td>
+    <td><code>id?</code>, <code>store_name</code>, <code>purchase_date</code>, <code>tax_rate_id</code>, <code>tax_rate?</code>, <code>tax_rate_description?</code>, 金額系（<code>subtotal</code>, <code>tax_amount</code>, <code>total_amount</code>）, <code>memo</code>, タイムスタンプ, <code>items?</code></td>
+  </tr>
+</table>
+
+<h2>2. DB 接続（<code>src/lib/db.ts</code>）</h2>
+<table>
+  <tr><th>項目</th><th>内容</th></tr>
+  <tr>
+    <td>エクスポート</td>
+    <td>mysql2 <code>createPool</code> のデフォルトエクスポート（<code>pool</code>）</td>
+  </tr>
+  <tr>
+    <td>環境変数</td>
+    <td><code>DB_HOST</code>, <code>DB_PORT</code>, <code>DB_USER</code>, <code>DB_PASSWORD</code>, <code>DB_NAME</code>（未設定時は localhost / 3306 / root / 空 / sample_schema）</td>
+  </tr>
+  <tr>
+    <td>その他</td>
+    <td><code>connectionLimit: 10</code>、<code>dateStrings: true</code>（日付のタイムゾーンずれ回避）</td>
+  </tr>
+</table>
+
+<h2>3. API — 税率（<code>/api/tax-rates</code>）</h2>
+<h3><span class="method get">GET</span> <span class="endpoint">/api/tax-rates</span></h3>
+<p class="section-note">クエリなし: 税率マスタ全件（<code>applicable_from</code> 昇順）。各要素は JSON 化時に <code>rate</code> を数値化。</p>
+<table>
+  <tr><th>HTTP</th><th>説明</th></tr>
+  <tr><td>200</td><td><code>TaxRate</code> 相当のオブジェクトの配列</td></tr>
+  <tr><td>500</td><td><code>{ "error": "DB エラー" }</code></td></tr>
+</table>
+
+<h3><span class="method get">GET</span> <span class="endpoint">/api/tax-rates?date=YYYY-MM-DD</span></h3>
+<p class="section-note">指定日以前で適用開始日が最新の1件を返す。</p>
+<table>
+  <tr><th>HTTP</th><th>説明</th></tr>
+  <tr><td>200</td><td>単一オブジェクト（税率1件）</td></tr>
+  <tr><td>404</td><td><code>{ "error": "該当する税率が見つかりません" }</code></td></tr>
+  <tr><td>500</td><td><code>{ "error": "DB エラー" }</code></td></tr>
+</table>
+
+<div class="page-break"></div>
+
+<h2>4. API — 商品カテゴリ（<code>/api/product-categories</code>）</h2>
+<h3><span class="method get">GET</span> <span class="endpoint">/api/product-categories</span></h3>
+<table>
+  <tr><th>HTTP</th><th>説明</th></tr>
+  <tr><td>200</td><td><code>id, name, sort_order</code> の一覧（<code>sort_order</code>, <code>name</code> でソート）</td></tr>
+  <tr><td>500</td><td><code>{ "error": "DB エラー" }</code></td></tr>
+</table>
+
+<h2>5. API — 商品（<code>/api/products</code>）</h2>
+<h3><span class="method get">GET</span> <span class="endpoint">/api/products</span></h3>
+<p class="section-note">一覧は最大200件。オプション検索: <code>search</code>（コード・名称・メーカー部分一致）, <code>category_id</code>。単体は <code>code</code> で商品コード完全一致。</p>
+<table>
+  <tr><th>条件</th><th>HTTP</th><th>レスポンス</th></tr>
+  <tr><td><code>?code=</code> で該当なし</td><td>404</td><td><code>{ "error": "Not Found" }</code></td></tr>
+  <tr><td>一覧 / 単一ヒット</td><td>200</td><td>オブジェクトまたは配列</td></tr>
+  <tr><td>DB 失敗</td><td>500</td><td><code>{ "error": "DB エラー" }</code></td></tr>
+</table>
+
+<h3><span class="method post">POST</span> <span class="endpoint">/api/products</span></h3>
+<p class="section-note">ボディ: <code>Product</code> 形式（必須: <code>product_code</code>, <code>product_name</code>）。</p>
+<table>
+  <tr><th>HTTP</th><th>説明</th></tr>
+  <tr><td>201</td><td><code>{ "id": &lt;insertId&gt; }</code></td></tr>
+  <tr><td>400</td><td>必須チェックエラー文言</td></tr>
+  <tr><td>409</td><td>商品コード重複（<code>ER_DUP_ENTRY</code>）</td></tr>
+  <tr><td>500</td><td>DB エラー</td></tr>
+</table>
+
+<h2>6. API — 商品 ID（<code>/api/products/[id]</code>）</h2>
+<p class="section-note">動的 <code>params</code> は Next.js の慣例どおり <code>Promise&lt;{ id: string }&gt;</code> を await。</p>
+
+<h3><span class="method get">GET</span></h3>
+<table>
+  <tr><th>HTTP</th><th>説明</th></tr>
+  <tr><td>200</td><td>商品1件（カテゴリ名 JOIN 済み）</td></tr>
+  <tr><td>404</td><td><code>{ "error": "Not Found" }</code></td></tr>
+  <tr><td>500</td><td>DB エラー</td></tr>
+</table>
+
+<h3><span class="method put">PUT</span></h3>
+<p class="section-note">ボディは POST と同様。必須: <code>product_code</code>, <code>product_name</code>。</p>
+<table>
+  <tr><th>HTTP</th><th>説明</th></tr>
+  <tr><td>200</td><td><code>{ "id": &lt;数値&gt; }</code></td></tr>
+  <tr><td>400 / 409 / 500</td><td>商品 POST と同様の意味</td></tr>
+</table>
+
+<h3><span class="method delete">DELETE</span></h3>
+<table>
+  <tr><th>HTTP</th><th>説明</th></tr>
+  <tr><td>200</td><td><code>{ "ok": true }</code></td></tr>
+  <tr><td>500</td><td>DB エラー</td></tr>
+</table>
+
+<div class="page-break"></div>
+
+<h2>7. API — レシート（<code>/api/receipts</code>）</h2>
+<h3><span class="method get">GET</span></h3>
+<p class="section-note">一覧。税率は JOIN で <code>tax_rate</code>, <code>tax_rate_description</code> を付与。<code>purchase_date</code>・<code>id</code> 降順。</p>
+<table>
+  <tr><th>HTTP</th><th>説明</th></tr>
+  <tr><td>200</td><td><code>Receipt</code> 形状の配列（明細 <code>items</code> なし）</td></tr>
+  <tr><td>500</td><td>DB エラー</td></tr>
+</table>
+
+<h3><span class="method post">POST</span></h3>
+<p class="section-note">ボディ: <code>Receipt</code> + <code>items</code> 任意。トランザクションで <code>receipts</code> 挿入後、<code>receipt_items</code> を一括 INSERT。</p>
+<table>
+  <tr><th>HTTP</th><th>説明</th></tr>
+  <tr><td>201</td><td><code>{ "id": &lt;receiptId&gt; }</code></td></tr>
+  <tr><td>500</td><td>ロールバック後 <code>DB エラー</code></td></tr>
+</table>
+
+<h2>8. API — レシート ID（<code>/api/receipts/[id]</code>）</h2>
+
+<h3><span class="method get">GET</span></h3>
+<p class="section-note">ヘッダ + <code>receipt_items</code> を <code>items</code> 配列で返却。各明細の <code>item_tax_rate</code> は数値化。</p>
+<table>
+  <tr><th>HTTP</th><th>説明</th></tr>
+  <tr><td>200</td><td>明細付き <code>Receipt</code></td></tr>
+  <tr><td>404</td><td><code>{ "error": "Not Found" }</code></td></tr>
+  <tr><td>500</td><td>DB エラー</td></tr>
+</table>
+
+<h3><span class="method put">PUT</span></h3>
+<p class="section-note">ヘッダ更新後、当該 <code>receipt_id</code> の明細を全削除し、<code>items</code> を再挿入（トランザクション）。</p>
+<table>
+  <tr><th>HTTP</th><th>説明</th></tr>
+  <tr><td>200</td><td><code>{ "id": &lt;数値&gt; }</code></td></tr>
+  <tr><td>500</td><td>DB エラー</td></tr>
+</table>
+
+<h3><span class="method delete">DELETE</span></h3>
+<table>
+  <tr><th>HTTP</th><th>説明</th></tr>
+  <tr><td>200</td><td><code>{ "ok": true }</code>（<code>receipts</code> の該当行を削除）</td></tr>
+  <tr><td>500</td><td>DB エラー</td></tr>
+</table>
+
+<h2>9. エクスポート関数一覧（Route Handler）</h2>
+<table>
+  <tr><th>ファイル</th><th>関数（HTTP）</th></tr>
+  <tr><td><code>api/tax-rates/route.ts</code></td><td><code>GET</code></td></tr>
+  <tr><td><code>api/product-categories/route.ts</code></td><td><code>GET</code></td></tr>
+  <tr><td><code>api/products/route.ts</code></td><td><code>GET</code>, <code>POST</code></td></tr>
+  <tr><td><code>api/products/[id]/route.ts</code></td><td><code>GET</code>, <code>PUT</code>, <code>DELETE</code></td></tr>
+  <tr><td><code>api/receipts/route.ts</code></td><td><code>GET</code>, <code>POST</code></td></tr>
+  <tr><td><code>api/receipts/[id]/route.ts</code></td><td><code>GET</code>, <code>PUT</code>, <code>DELETE</code></td></tr>
+</table>
+
+<p class="meta" style="margin-top: 24px;">※ 本書はソースコード（<code>src/lib</code>, <code>src/app/api</code>）に基づく。仕様変更時は HTML を更新し、<code>npm run pdf:spec</code> で PDF を再生成すること。</p>
+
+</body>
+</html>

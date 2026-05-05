@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "pdf:spec": "node scripts/html-to-pdf.cjs"
   },
   "dependencies": {
     "mysql2": "^3.22.3",
